@@ -32,7 +32,7 @@ Double& Double::operator+=(const double& val) {
     if (val >= 0) {
         if (overflowMinorSum(temp)) {
             if (overflowMajorSum()) throw overflow_error(errors[0]);
-            // ������� minor � ������ ������������
+            // Находим minor с учётом переполнения
             temp -= maxui - minor, minor = temp, ++major;
         }
         else minor += temp;
@@ -46,7 +46,7 @@ Double& Double::operator-=(const double& val) {
     if (val >= 0) {
         if (temp > minor) {
             if (major == 0) throw underflow_error(errors[2]);
-            // ������� minor � ������ ������� ������������
+            // Находим minor с учётом нижнего переполнения
             minor = maxui - (temp - minor), --major;
         }
         else minor -= temp;
@@ -65,17 +65,17 @@ Double& Double::operator/=(const double& val) {
     if (val == 0) throw underflow_error(errors[1]);
     if (val < 0) throw underflow_error(errors[3]);
     uint temp = static_cast<uint>(val);
-    // ������� ������� �� ������� major
+    // Находим остаток от деления major
     double rest = static_cast<double>(major) / temp - (major / temp);
     double r = fmod(static_cast<double>(minor), temp);
-    // ����� ������. If ���������, ����� ��� major � ������� �� ����� �������� ��������
+    // Делим нацело. If сработает, когда нет major и остаток не равен половине делителя
     if (major != 0 && fmod(static_cast<double>(minor), temp) != static_cast<double>(temp) / 2)
-        // � minor ���������� ���������� �����, ���������� �� ���������� +-1
+        // В minor используем округление вверх, избавляясь от неточности +-1
         minor = static_cast<uint>(ceil(static_cast<double>(minor) / temp));
     else minor /= temp;
     major /= temp;
-    // ���������� ������� � minor
-    // ���� rest ����� ������ 0.5, �� � Double ����� ������������
+    // Прибавляем остаток к minor
+    // Если rest будет больше 0.5, то у long будет переполнение
     if (rest > 0.5) rest -= 0.5, * this += static_cast<Double>(rest * maxui);
     // rest <= 0.5
     *this += static_cast<Double>(rest * maxui);
@@ -83,9 +83,9 @@ Double& Double::operator/=(const double& val) {
 }
 Double& Double::operator%=(const Double& val) {
     Double tempDouble = *this;
-    // ����� ������, ����� �������� �������
+    // Делим нацело, затем умножаем обратно
     tempDouble /= val, tempDouble *= val;
-    // ������� �������� �������
+    // Находим разницей остаток
     *this -= tempDouble;
     return *this;
 }
@@ -108,7 +108,7 @@ Double& Double::operator+=(const Double& rlng) {
     uint temp = static_cast<uint>(rlng.minor);
     if (overflowMinorSum(temp)) {
         if (overflowMajorSum()) throw overflow_error(errors[0]);
-        // ������� minor � ������ ������������
+        // Находим minor с учётом переполнения
         temp -= maxui - minor, minor = temp, ++major;
     }
     else minor += temp;
@@ -120,7 +120,7 @@ Double& Double::operator-=(const Double& rlng) {
     uint temp = static_cast<uint>(rlng.minor);
     if (temp > minor) {
         if (major == 0) throw underflow_error(errors[2]);
-        // ������� minor � ������ ������� ������������
+        // Находим minor с учётом нижнего переполнения
         minor = maxui - (temp - minor), --major;
     }
     else minor -= temp;
@@ -136,8 +136,8 @@ Double& Double::operator/=(const Double& rlng) {
     ull dividend = static_cast<ull>(major) * maxui + minor;
     ull divider = static_cast<ull>(rlng.major) * maxui + rlng.minor;
     *this = 0;
-    // �.�. 2^64 / 2^32 = 2^32, �� Double �� �������� ��������� (2^16;2^32]
-    // � ������� ������������� ����� AddULL, ������� �� �������� ������ 2^64 / [1;2^32)
+    // Т.к. 2^64 / 2^32 = 2^32, то long не подходит диапазону (2^16;2^32]
+    // И принято задействовать метод AddULL, включая во внимание случай 2^64 / [1;2^32)
     return AddULL(dividend / divider);
 }
 Double& Double::operator%=(const Double& rlng) {
